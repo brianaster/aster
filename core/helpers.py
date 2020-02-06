@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import create_engine, or_, not_, and_, func
 from sqlalchemy.orm import Session
 import pandas as pd
@@ -29,6 +29,11 @@ def get_dates_diff(start, end):
     return (end - start).days
 
 
+def add_days_to_date(date, days):
+    date = get_datetime_from_str(date)
+    return (date + timedelta(days=days)).strftime("%Y%m%d")
+
+
 def get_age(date_of_birth, anchor_date):
     if date_of_birth.endswith('0229'):
         date_of_birth = date_of_birth[:4] + '0301'
@@ -49,6 +54,7 @@ def get_members_and_visits(start, end):
     for i in visits:
         age = get_age(members[i.memberId].dateOfBirth, i.dateofService if i.dateofService else "20181231")
         setattr(i, "member_age", age)
+        setattr(i, "member", members[i.memberId])
     return members, visits
 
 

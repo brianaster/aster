@@ -39,7 +39,9 @@ def get_eligible_members(members, visits):
                         "Observation": set(),
                         "ED": set(),
                         "Nonacute Inpatient": set(),
-                    }
+                    },
+                    "Discharges": [],
+                    "Last Discharge": "",
                 }
             })
 
@@ -51,12 +53,20 @@ def get_eligible_members(members, visits):
             )
             if inpatient_stay:
                 uu[i.memberId]["Inpatient Stay"].add(i)
+                if not uu[i.memberId]["Last Discharge"] and i.dischargeDate:
+                    uu[i.memberId]["Last Discharge"] = i.dischargeDate
+                    uu[i.memberId]["Discharges"].append(i.dischargeDate)
+                elif i.dischargeDate and get_dates_diff(uu[i.memberId]["Last Discharge"], i.dischargeDate) < 31: 
+                    uu[i.memberId]["Last Discharge"] = i.dischargeDate
+                    uu[i.memberId]["Discharges"][-1] = i.dischargeDate
+                elif i.dischargeDate:
+                    uu[i.memberId]["Last Discharge"] = i.dischargeDate
+                    uu[i.memberId]["Discharges"].append(i.dischargeDate)
 
-            
 
     for i in uu:
         encounters = len(uu[i]["Inpatient Stay"])
-        if encounters > 1:
+        if encounters >= 1:
             eligible_members.add(i)
 
 
@@ -84,20 +94,20 @@ def get_eligible_members(members, visits):
 members, visits = get_members_and_visits(MEMBERS_START_DATE, MEMBERS_END_DATE)
 
 eligible_members = get_eligible_members(members, visits)
-print(eligible_members)
+#print(eligible_members)
 for i in visits:
     if i.memberId in eligible_members:
-        print(i, i.dateofService, i.admissionDate, i.dischargeDate)
-
+        #print(i, i.dateofService, i.admissionDate, i.dischargeDate)
+        pass
 
 numerator = set()
 
 for i in visits:
     if i.memberId in eligible_members:
         if check_daterange(i, 2016, 2016, end_day="1130"):
-            if measure.check_conditions(i, ["Medication Reconciliation"]):
+            if measure.check_conditions(i, ["Medication Reconciliation"]) and i.dischargeDate in uu[i.memberId]["Discharges"]:
                 numerator.add(i.memberId)
 
 print(len(numerator), numerator)
 print(len(eligible_members), eligible_members)
-print(get_stars_rank(numerator, eligible_members, STARS_RANGES))
+#print(get_stars_rank(numerator, eligible_members, STARS_RANGES))
